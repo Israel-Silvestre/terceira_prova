@@ -69,7 +69,7 @@ class _$AppDatabase extends AppDatabase {
     Callback? callback,
   ]) async {
     final databaseOptions = sqflite.OpenDatabaseOptions(
-      version: 1,
+      version: 2,
       onConfigure: (database) async {
         await database.execute('PRAGMA foreign_keys = ON');
         await callback?.onConfigure?.call(database);
@@ -85,7 +85,7 @@ class _$AppDatabase extends AppDatabase {
       },
       onCreate: (database, version) async {
         await database.execute(
-            'CREATE TABLE IF NOT EXISTS `Pokemon` (`id` INTEGER NOT NULL, `name` TEXT NOT NULL, `type` TEXT NOT NULL, PRIMARY KEY (`id`))');
+            'CREATE TABLE IF NOT EXISTS `Pokemon` (`id` INTEGER NOT NULL, `url` TEXT NOT NULL, `nome` TEXT NOT NULL, `experiencia` INTEGER NOT NULL, `altura` REAL NOT NULL, `capturado` INTEGER NOT NULL, PRIMARY KEY (`id`))');
 
         await callback?.onCreate?.call(database, version);
       },
@@ -109,8 +109,23 @@ class _$PokemonDao extends PokemonDao {
             'Pokemon',
             (Pokemon item) => <String, Object?>{
                   'id': item.id,
-                  'name': item.name,
-                  'type': item.type
+                  'url': item.url,
+                  'nome': item.nome,
+                  'experiencia': item.experiencia,
+                  'altura': item.altura,
+                  'capturado': item.capturado ? 1 : 0
+                }),
+        _pokemonUpdateAdapter = UpdateAdapter(
+            database,
+            'Pokemon',
+            ['id'],
+            (Pokemon item) => <String, Object?>{
+                  'id': item.id,
+                  'url': item.url,
+                  'nome': item.nome,
+                  'experiencia': item.experiencia,
+                  'altura': item.altura,
+                  'capturado': item.capturado ? 1 : 0
                 }),
         _pokemonDeletionAdapter = DeletionAdapter(
             database,
@@ -118,8 +133,11 @@ class _$PokemonDao extends PokemonDao {
             ['id'],
             (Pokemon item) => <String, Object?>{
                   'id': item.id,
-                  'name': item.name,
-                  'type': item.type
+                  'url': item.url,
+                  'nome': item.nome,
+                  'experiencia': item.experiencia,
+                  'altura': item.altura,
+                  'capturado': item.capturado ? 1 : 0
                 });
 
   final sqflite.DatabaseExecutor database;
@@ -130,6 +148,8 @@ class _$PokemonDao extends PokemonDao {
 
   final InsertionAdapter<Pokemon> _pokemonInsertionAdapter;
 
+  final UpdateAdapter<Pokemon> _pokemonUpdateAdapter;
+
   final DeletionAdapter<Pokemon> _pokemonDeletionAdapter;
 
   @override
@@ -137,8 +157,11 @@ class _$PokemonDao extends PokemonDao {
     return _queryAdapter.queryList('SELECT * FROM Pokemon',
         mapper: (Map<String, Object?> row) => Pokemon(
             id: row['id'] as int,
-            name: row['name'] as String,
-            type: row['type'] as String));
+            url: row['url'] as String,
+            nome: row['nome'] as String,
+            experiencia: row['experiencia'] as int,
+            altura: row['altura'] as double,
+            capturado: (row['capturado'] as int) != 0));
   }
 
   @override
@@ -146,14 +169,22 @@ class _$PokemonDao extends PokemonDao {
     return _queryAdapter.query('SELECT * FROM Pokemon WHERE id = ?1',
         mapper: (Map<String, Object?> row) => Pokemon(
             id: row['id'] as int,
-            name: row['name'] as String,
-            type: row['type'] as String),
+            url: row['url'] as String,
+            nome: row['nome'] as String,
+            experiencia: row['experiencia'] as int,
+            altura: row['altura'] as double,
+            capturado: (row['capturado'] as int) != 0),
         arguments: [id]);
   }
 
   @override
   Future<void> insertPokemon(Pokemon pokemon) async {
-    await _pokemonInsertionAdapter.insert(pokemon, OnConflictStrategy.replace);
+    await _pokemonInsertionAdapter.insert(pokemon, OnConflictStrategy.abort);
+  }
+
+  @override
+  Future<void> updatePokemon(Pokemon pokemon) async {
+    await _pokemonUpdateAdapter.update(pokemon, OnConflictStrategy.replace);
   }
 
   @override

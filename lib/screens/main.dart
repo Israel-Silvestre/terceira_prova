@@ -50,7 +50,7 @@ class TelaHome extends StatelessWidget {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => TelaCaptura(),
+                    builder: (context) => TelaCaptura(database: database),
                   ),
                 );
               },
